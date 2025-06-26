@@ -2,6 +2,8 @@ name: Linux, gcc, EDK2
 
 on:
   push:
+    branches:
+      - ci
     tags:
       - '*'
 
@@ -13,7 +15,7 @@ env:
   GCC5_LOONGARCH64_PREFIX: loongarch64-unknown-linux-gnu-
   FULL_SHELL_GUID: EA4BB293-2D7F-4456-A681-1F22F42CD0BC
   BUILD_TYPES: DEBUG RELEASE
-  ARCHS: X64 IA32 AARCH64 ARM RISCV64 LOONGARCH64
+  ARCHS: X64
   # Shell versions:
   #  2.2 added on 2017.03.31
   #  2.1 added on 2014.08.05
@@ -48,6 +50,9 @@ jobs:
         curl -L -O https://github.com/loongson/build-tools/releases/download/2024.11.01/x86_64-cross-tools-loongarch64-binutils_2.43.1-gcc_14.2.0-glibc_2.40.tar.xz
         tar -xJf x86_64-cross-tools-loongarch64-binutils_2.43.1-gcc_14.2.0-glibc_2.40.tar.xz
         echo "$PWD/cross-tools/bin" >> "$GITHUB_PATH"
+        echo
+        dpkg -l | grep -e gcc -e g++ -e make -e nasm -e python -e uuid-dev
+        echo
 
     - name: Set version
       id: set_version
@@ -174,6 +179,7 @@ jobs:
 
     - name: Create release
       uses: softprops/action-gh-release@v2
+      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         body_path: ./body.txt
