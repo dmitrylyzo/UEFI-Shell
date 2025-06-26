@@ -53,6 +53,10 @@ jobs:
         echo
         dpkg -l | grep -e gcc -e g++ -e make -e nasm -e python -e uuid-dev
         echo
+        gcc --version
+        echo
+        g++ --version
+        echo
 
     - name: Set version
       id: set_version
@@ -89,12 +93,14 @@ jobs:
 
     - name: Download the latest Mosby release
       uses: robinraju/release-downloader@v1
+      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       with:
         repository: pbatard/Mosby
         latest: true
         fileName: Mosby*.zip
 
     - name: Extract the Mosby content
+      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       run: |
         for BUILD_TYPE in ${{ env.BUILD_TYPES }}; do
           mkdir $BUILD_TYPE
@@ -104,6 +110,7 @@ jobs:
         done
 
     - name: Create ISO filesystem structure
+      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       run: |
         for BUILD_TYPE in ${{ env.BUILD_TYPES }}; do
           mkdir -p $BUILD_TYPE/efi/boot
@@ -145,6 +152,7 @@ jobs:
         done
 
     - name: Generate ISO images
+      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       run: |
         for BUILD_TYPE in ${{ env.BUILD_TYPES }}; do
           genisoimage -v -V "UEFI SHELL ${{ steps.set_version.outputs.shell_version }} ${{ steps.set_version.outputs.shell_release }} ($BUILD_TYPE)" -JR -o "UEFI-Shell-${{ steps.set_version.outputs.shell_version }}-${{ steps.set_version.outputs.shell_release }}-$BUILD_TYPE.iso" $BUILD_TYPE
@@ -158,13 +166,21 @@ jobs:
         sha256sum *.iso
         sha256sum *.efi
 
+    - name: Upload EFI artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: EFIs
+        path: ./*.efi
+
     - name: Upload ISO artifacts
       uses: actions/upload-artifact@v4
+      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       with:
         name: ISOs
         path: ./*.iso
 
     - name: Create release blurb
+      if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
       run: |
         printf "**UEFI Shell v%s, release %s**\n\n" ${{ steps.set_version.outputs.shell_version }} ${{ steps.set_version.outputs.shell_release }} > body.txt
         printf "Built from [%s](https://github.com/tianocore/edk2/releases/tag/%s) and supporting:\n" ${{ steps.set_version.outputs.edk2_tag }} ${{ steps.set_version.outputs.edk2_tag }} >> body.txt
