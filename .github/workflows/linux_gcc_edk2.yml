@@ -163,7 +163,7 @@ jobs:
         for BUILD_TYPE in ${{ env.BUILD_TYPES }}; do
           [ -d $BUILD_TYPE/efi/boot ] && sha256sum $BUILD_TYPE/efi/boot/*.efi
         done
-        sha256sum *.iso
+        stat *.iso >/dev/null 2>&1 && sha256sum *.iso
         sha256sum *.efi
 
     - name: Upload EFI artifacts
